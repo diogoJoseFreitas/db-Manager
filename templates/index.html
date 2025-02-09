@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerenciador de Bancos de Dados</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+</head>
+<body class="container mt-4">
+    <h1 class="text-center">Gerenciador de Bancos de Dados</h1>
+
+    <!-- Formulário para criar novo container -->
+    <div class="card p-3 mt-4">
+        <h4>Criar Novo Banco</h4>
+        <div class="mb-2">
+            <label class="form-label">Nome do Banco</label>
+            <input type="text" id="dbName" class="form-control">
+        </div>
+        <div class="mb-2">
+            <label class="form-label">Porta</label>
+            <input type="number" id="dbPort" class="form-control" value="1433">
+            <input type="checkbox" id="dbPersists" value="true"> Persistir Dados
+        </div>
+        <button class="btn btn-primary" onclick="createContainer()">Criar</button>
+    </div>
+
+    <!-- Lista de Containers -->
+    <h3 class="mt-4">Bancos de Dados Ativos</h3>
+    <table class="table table-striped table-hover mt-2">
+        <thead>
+            <tr>
+                <th scope="col">Nome</th>
+                <th scope="col">Status</th>
+                <th scope="col">Portas</th>
+                <th scope="col">Ações</th>
+            </tr>
+        </thead>
+        <tbody id="containerList">
+            <!-- Os itens da tabela serão adicionados dinamicamente aqui -->
+        </tbody>
+    </table>
+    <script>
+         // Função para carregar a lista de containers
+        function loadContainers() {
+            fetch('/containers')
+                .then(response => response.json())
+                .then(data => {
+                    let tableBody = document.getElementById('containerList');
+                    tableBody.innerHTML = '';  // Limpar a tabela antes de adicionar novos itens
+
+                    // Preenche a tabela com os dados dos containers
+                    data.forEach(container => {
+                        let row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${container.name}</td>
+                            <td>${container.status}</td>
+                            <td>${container.ports}</td>
+                            <td>
+                                <button class="btn btn-danger btn-sm" onclick="deleteContainer('${container.id}')">Remover</button>
+                            </td>
+                        `;
+                        tableBody.appendChild(row);
+                    });
+                })
+                .catch(error => {
+                    console.error('Erro ao carregar os containers:', error);
+                });
+        }
+
+        // Função para criar um novo container
+        function createContainer() {
+            let name = document.getElementById('dbName').value;
+            let port = document.getElementById('dbPort').value;
+            let persists = document.getElementById('dbPersists').value;
+
+            fetch('/create', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, port, persists })
+            }).then(response => response.json())
+              .then(() => loadContainers());
+        }
+
+        // Função para deletar um container
+        function deleteContainer(id) {
+            fetch(`/delete/${id}`, { method: 'DELETE' })
+                .then(response => response.json())
+                .then(() => loadContainers());
+        }
+
+        // Carregar a lista ao abrir a página
+        loadContainers();
+    </script>
+</body>
+</html>
